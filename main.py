@@ -1,3 +1,4 @@
+#libraries
 import json
 import websocket
 import pprint
@@ -12,14 +13,15 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.animation as animation
 from matplotlib.figure import Figure
 
-PERIOD = 14
+
+PERIOD = 14 #number of closing prices calculated in RSI
 SYMBOL = 'ETHUSD'
-QUANTITY: float = 1
+QUANTITY: float = 1 #amount to buy per transaction
 buy_counter = 0
 sell_counter = 0
-in_position: bool = False
-on = False
-prices = []
+in_position: bool = False #entered ideal RSI range
+on = False 
+prices = [] # 1 minute closing prices
 global rsi
 unclosed_prices = []
 num_prices = 0
@@ -28,21 +30,21 @@ myFont = font.Font(family="Stencil", size=11, weight="bold")
 x = tk.StringVar()
 global startButton
 closeWS = False
-tradelist = []
+tradelist = [] # all trades that have taken place
 tradecounter = 0
 tradelistIsOpen = False
 tkRSI = tk.StringVar()
 StartWallet = 0
 profit = 0
-wallet = 0
+wallet = 0 #amount of funds users has allot to bot 
 tkProfit = tk.StringVar()
 in_range = False
 
 
-def start():
+def start(): #when user hits start button to enter main screen
     global on
     on = True
-    # get rid of stuff from home page
+    # destroying home page so main screen elements can be added
     startButton.destroy()
     L1.destroy()
     L2.destroy()
@@ -101,8 +103,8 @@ def start():
         plt.plot(rsi)
         plt.show()
 
-    def connection():
-        ws = websocket.WebSocketApp(SOCKET, on_open=on_open, on_close=on_close, on_message=on_message)
+    def connection(): #thread that runns continuous loop gathering prices from websocket
+        ws = websocket.WebSocketApp(SOCKET, on_open=on_open, on_close=on_close, on_message=on_message) #connect to websocket
         ws.run_forever()
 
     def on_open(ws):
@@ -112,7 +114,7 @@ def start():
         print('closed connection')
         ws.close()
 
-    def on_message(ws, message):
+    def on_message(ws, message): #every time a new price is recieved
         if closeWS:
             on_close()
         print('got message')
@@ -124,7 +126,7 @@ def start():
         global x
         x.set('Current Price: ${}'.format(close))
         global prices, wallet, sell_counter, buy_counter, in_position, QUANTITY, rsi, tradecounter, profit, StartWallet, in_range
-        if not in_position:
+        if not in_position: 
             profit = wallet - StartWallet
             print("profit calc")
             print(profit)
@@ -146,7 +148,7 @@ def start():
             print("Sell counter {}".format(sell_counter))
             print("buy counter {}".format(buy_counter))
 
-            if len(prices) > PERIOD:
+            if len(prices) > PERIOD: #make sure there's enough data to calculate RSI
                 np_closes = numpy.array(prices)
                 rsi = talib.RSI(np_closes, PERIOD)
                 print("all rsis calculated so far")
@@ -159,7 +161,7 @@ def start():
                     in_range = True
                     print('in range')
                 if last_rsi > overbought:
-                    if in_position:
+                    if in_position: #meets sell conditions
                         print("SELLLL!!!")
                         wallet += cost * QUANTITY
                         tradelist.append('Sold for ${}'.format(cost))
@@ -174,7 +176,7 @@ def start():
                 if in_range and last_rsi > (oversold - 1):
                     if in_position:
                         print("already own")
-                    else:
+                    else: #meets buy conditions
                         print("BUYYYYYY!!!!")
                         print("test1")
                         print(close)
@@ -187,6 +189,7 @@ def start():
                         in_range = False
                         print("current funds {}".format(wallet))
 
+     #converting normal variables into TK variables that can be displayed and setting up buttons for main screen                   
     priceButton = tk.Button(window, text="Price Graph", command=show_price, bg="black", fg="white", height=2, width=30, font=myFont)
     priceButton.pack(fill=tk.BOTH, expand=1)
     rsiButton = tk.Button(window, text="RSI graph", command=show_rsi, bg="black", fg="white", height=2, width=30, font=myFont)
@@ -205,9 +208,9 @@ def start():
     ptofitL.pack(fill=tk.BOTH, expand=1)
     t = Thread(target=connection)
     t.start()
-    window.mainloop()
+    window.mainloop() #thread for continuous loop that operates GUI
 
-
+#converting normal variables into TK variables that can be displayed and setting up buttons for start screen
 if not on:
     print('not on')
     L1 = tk.Label(window, text="Oversold Value", bg="black", fg="white", height=2, width=30, font=myFont)
@@ -232,4 +235,4 @@ if not on:
     popupmenu = tk.OptionMenu(window, tkcoin, *choices)
     popupmenu.pack(ipady=6, fill=tk.BOTH, expand=1)
     startButton.pack(fill=tk.BOTH, expand=1)
-    window.mainloop()
+    window.mainloop() #thread for continuous loop that operates GUI
